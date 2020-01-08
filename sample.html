@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>BPC.js</title>
+  <script src="bpc.js" type="text/javascript"></script>
+  <script type="text/javascript">
+    var stopFunc = null;
+    function start() {
+      stopFunc = BPCStart(Date.UTC(2010,9,10,10,10,10,0)-(3600*1e3)*8, function(data) {
+        document.getElementById('utc').innerHTML = 'UTC: ' + new Date().toUTCString();
+        if (data) {
+          var frames = data.frames || {};
+          document.getElementById('status').innerHTML = [
+            'countdown: ' + data.countdown,
+            'will cailbrate to GMT+8 timezone: ' +
+            (2000 + parseInt(frames.year, 2)) + '/' +
+            parseInt(frames.month, 2) + '/' +
+            parseInt(frames.day, 2) + ' ' +
+            parseInt(frames.hour, 2) + ':' +
+            parseInt(frames.minute, 2) +
+            ' day of week: ' + parseInt(frames.dayOfWeek, 2),
+          ].join('<br/>');
+        }
+      });
+    }
+    function stop() {
+      if (stopFunc) stopFunc();
+    }
+  </script>
+</head>
+<body>
+  <div>
+    <a href="https://www.g-xiake.com/bpc">keep calibrating to present time</a>
+  </div>
+  <div>
+    calibrating to 2010/10/10 10:10 GMT+8 :
+    <button onclick="start()">
+      start
+    </button>
+    <button onclick="stop()">
+      stop
+    </button>
+  </div>
+  <div id="utc">
+  </div>
+  <div id="status">
+  </div>
+</body>
+</html>
