@@ -132,8 +132,13 @@ var BPCStart = (function ModuleSpace() {
     oscillator.connect(audioCtx.destination);
     oscillator.start();
   }
-
+  var stopFunction = null;
+  var isRunning = false;
   function BPCStart(utctime, cb) {
+    if (true === isRunning) {
+      return stopFunction;
+    }
+    isRunning = true;
     if ('function' === typeof utctime) {
       cb = utctime;
       utctime = null;
@@ -181,7 +186,8 @@ var BPCStart = (function ModuleSpace() {
         }
       }, 1 * 1e3);
     }, 1e3 - Date.now() % 1e3);
-    return function () {
+    stopFunction = function () {
+      isRunning = false;
       clearInterval(intervalHandle);
       setTimeout(function() {
         try {
@@ -191,6 +197,7 @@ var BPCStart = (function ModuleSpace() {
         }
       }, 1 * 1e3);
     };
+    return stopFunction;
   }
   if ('object' === typeof module) module.exports = BPCStart;
   if ('object' === typeof window) window.BPCStart = BPCStart;
