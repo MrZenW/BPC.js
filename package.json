@@ -1,6 +1,6 @@
 {
   "name": "bpc.js",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A JavaScript library used to generate 68.5KHz BPC which used for Radio controlled timepieces",
   "main": "bpc.js",
   "scripts": {
