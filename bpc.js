@@ -8,6 +8,7 @@
 
 // eslint-disable-next-line no-unused-vars
 var BPCStart = (function ModuleSpace() {
+  var frequency = (68.5 * 1e3) / 4;
   /**
    * the _getUndefined() function is used to avoid
    * the programmer, I, make any mistake cause the
@@ -18,8 +19,22 @@ var BPCStart = (function ModuleSpace() {
   function BLANK_FUNCTION() { }
 
   function gxkSetInterval(cb) {
-    cb.apply(this, Array.prototype.slice.call(arguments, 2));
-    return setInterval.apply(this, arguments);
+    // cb.apply(this, Array.prototype.slice.call(arguments, 2));
+    // return setInterval.apply(this, arguments);
+    var timeoutHandle = 0;
+    function _process() {
+      if (timeoutHandle !== false) {
+        timeoutHandle = setTimeout(_process, 1e3 - Date.now() % 1e3);
+        cb();
+      }
+    }
+    _process();
+    return function() {
+      if (timeoutHandle !== false) {
+        clearTimeout(timeoutHandle);
+        timeoutHandle = false;
+      }
+    };
   }
   function toQuaternary(n, length) {
     var r = Number(n).toString(4);
@@ -118,7 +133,7 @@ var BPCStart = (function ModuleSpace() {
     oscillator = audioCtx.createOscillator();
 
     oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(13.7 * 1e3, audioCtx.currentTime);
+    oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
     oscillator.connect(audioCtx.destination);
   }
   function startAudioIfNeeded() {
@@ -128,7 +143,7 @@ var BPCStart = (function ModuleSpace() {
     oscillator = audioCtx.createOscillator();
 
     oscillator.type = 'square';
-    oscillator.frequency.setValueAtTime(13.7 * 1e3, audioCtx.currentTime);
+    oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
     oscillator.connect(audioCtx.destination);
     oscillator.start();
   }
@@ -148,47 +163,45 @@ var BPCStart = (function ModuleSpace() {
     cb = cb || BLANK_FUNCTION;
     var frames = null;
     var framesSoundCode = [];
-    var intervalHandle = 0;
-    setTimeout(function() {
-      intervalHandle = gxkSetInterval(function() {
-        startAudioIfNeeded();
-        var soundSecond = framesSoundCode.shift();
-        if (soundSecond === _getUndefined()) {
-          var second = (new Date()).getSeconds();
-          var modeOfSecond = second % 20;
-          if (modeOfSecond === 0) {
-            frames = generateDateInfo(Date.now() + timeDifference);
-            var framesString = dateInfoTo4String(frames);
-            framesSoundCode = dateInfoStringToSoundCode(framesString);
-            cb({
-              frames: frames,
-              countdown: 0,
-            });
-          } else {
-            oscillator.stop(0.1);
-            oscillator = null;
-            cb({
-              frames: frames,
-              countdown: 20 - modeOfSecond,
-            });
-          }
-        } else {
-          oscillator.stop();
-          reinitAudio();
-          setTimeout(function() {
-            oscillator.start();
-          }, soundSecond * 1e3);
+    var intervalHandleStopFunction = gxkSetInterval(function() {
+      startAudioIfNeeded();
+      var soundSecond = framesSoundCode.shift();
+      if (soundSecond === _getUndefined()) {
+        var second = (new Date()).getSeconds();
+        var modeOfSecond = second % 20;
+        if (modeOfSecond === 0) {
+          frames = generateDateInfo(Date.now() + timeDifference);
+          var framesString = dateInfoTo4String(frames);
+          framesSoundCode = dateInfoStringToSoundCode(framesString);
           cb({
             frames: frames,
             countdown: 0,
-            soundSecond: soundSecond,
+          });
+        } else {
+          oscillator.stop(0.1);
+          oscillator = null;
+          cb({
+            frames: frames,
+            countdown: 20 - modeOfSecond,
           });
         }
-      }, 1 * 1e3);
-    }, 1e3 - Date.now() % 1e3);
+      } else {
+        oscillator.stop();
+        reinitAudio();
+        setTimeout(function() {
+          oscillator.start();
+        }, soundSecond * 1e3);
+        cb({
+          frames: frames,
+          countdown: 0,
+          soundSecond: soundSecond,
+        });
+      }
+    });
+
     stopFunction = function () {
       isRunning = false;
-      clearInterval(intervalHandle);
+      intervalHandleStopFunction();
       setTimeout(function() {
         try {
           oscillator.stop();
